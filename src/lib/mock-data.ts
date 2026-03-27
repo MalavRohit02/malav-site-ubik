@@ -148,6 +148,7 @@ export const agents = [
     description: "Scans incoming email, categorizes by priority, drafts responses for review",
     active: true,
     lastRun: "2 mins ago",
+    category: "active" as const,
     steps: [
       { id: 1, tool: "Gmail", name: "Read Inbox", status: "connected" as const, icon: "Mail" },
       { id: 2, tool: "UBIK AI", name: "Classify & Summarize", status: "connected" as const, icon: "Brain" },
@@ -160,6 +161,7 @@ export const agents = [
     description: "Monitors shipping rate confirmations, validates against contracts, flags discrepancies",
     active: true,
     lastRun: "15 mins ago",
+    category: "active" as const,
     steps: [
       { id: 1, tool: "Email", name: "Monitor Inbox", status: "connected" as const, icon: "Mail" },
       { id: 2, tool: "Document AI", name: "Extract Rates", status: "connected" as const, icon: "FileText" },
@@ -173,6 +175,7 @@ export const agents = [
     description: "Pulls Figma designs, runs browser preview, captures screenshots for approval",
     active: false,
     lastRun: "2 days ago",
+    category: "paused" as const,
     steps: [
       { id: 1, tool: "Figma MCP", name: "Fetch Design", status: "connected" as const, icon: "Figma" },
       { id: 2, tool: "Browser Use", name: "Render Preview", status: "connected" as const, icon: "Globe" },
@@ -186,11 +189,25 @@ export const agents = [
     description: "Extracts action items from meeting transcripts, creates tasks, sends follow-ups",
     active: true,
     lastRun: "1 hr ago",
+    category: "active" as const,
     steps: [
       { id: 1, tool: "Calendar", name: "Get Transcript", status: "connected" as const, icon: "Calendar" },
       { id: 2, tool: "UBIK AI", name: "Extract Actions", status: "connected" as const, icon: "Brain" },
       { id: 3, tool: "Task Manager", name: "Create Tasks", status: "connected" as const, icon: "CheckSquare" },
       { id: 4, tool: "Email", name: "Send Follow-up", status: "connected" as const, icon: "Send" },
+    ],
+  },
+  {
+    id: 5,
+    name: "Document Extractor",
+    description: "Parse invoices, POs, and compliance docs into structured data",
+    active: false,
+    lastRun: "5 days ago",
+    category: "templates" as const,
+    steps: [
+      { id: 1, tool: "Email", name: "Detect Attachment", status: "connected" as const, icon: "Mail" },
+      { id: 2, tool: "Document AI", name: "OCR & Parse", status: "connected" as const, icon: "FileText" },
+      { id: 3, tool: "Database", name: "Store Records", status: "connected" as const, icon: "Database" },
     ],
   },
 ];
@@ -255,88 +272,147 @@ export const agentPreferences = {
   },
 };
 
-// ─── INBOX ───
-export const inboxThreads = [
+// ─── INBOX (UNIFIED — EMAIL, SLACK, WHATSAPP, CALLS) ───
+export type InboxChannel = "email" | "slack" | "whatsapp" | "call" | "system";
+
+export const inboxMessages = [
   {
     id: 1,
-    from: "Sarah Kim",
-    email: "sarah.kim@maersk.com",
-    subject: "RE: Rate Confirmation — Q2 Mumbai-Rotterdam",
-    summary: "Confirmed revised rate of $2,850/TEU. Updated contract attached. Requires your signature by Friday.",
+    from: "Azzahra Salsabil",
+    channel: "email" as InboxChannel,
+    subject: "Contract Negotiation: Node-04 Cluster Deployment",
+    summary: "The revised terms for the Node-04 expansion require immediate legal review. Current protocols are out of sync with the 2024 compliance mandate.",
     priority: "critical" as const,
-    time: "9:14 AM",
+    time: "08:42 AM",
     unread: true,
-    labels: ["RATE_CONFIRMATION", "ACTION_REQUIRED"],
+    category: "ACTION_REQUIRED" as const,
+    labels: ["CONTRACT", "LEGAL"],
     agentSuggestion: "Auto-drafted acceptance reply with digital signature request",
   },
   {
     id: 2,
-    from: "Raj Mehta",
-    email: "raj@thaituna.co.th",
-    subject: "Compliance Documents — Extension Request",
-    summary: "Requesting 5-day extension for HACCP certification renewal. Previous cert expires March 28.",
+    from: "Hemanth Rao",
+    channel: "slack" as InboxChannel,
+    subject: "Biometric Protocol Update",
+    summary: "Sync errors detected in the Southeast Sector. We need to re-validate the ledger entries before the next audit cycle starts at 12:00.",
     priority: "high" as const,
-    time: "8:42 AM",
+    time: "07:15 AM",
     unread: true,
-    labels: ["COMPLIANCE", "SUPPLIER"],
+    category: "ACTION_REQUIRED" as const,
+    labels: ["COMPLIANCE", "AUDIT"],
     agentSuggestion: "Drafted conditional approval with clause 4.2 reference",
   },
   {
     id: 3,
+    from: "Jane Smith",
+    channel: "email" as InboxChannel,
+    subject: "New feature documentation",
+    summary: "The product development team has shared the latest feature documentation for Q2 sprint review.",
+    priority: "medium" as const,
+    time: "YESTERDAY",
+    unread: true,
+    category: "ACTION_REQUIRED" as const,
+    labels: ["PRODUCT_DEV"],
+    agentSuggestion: null,
+  },
+  {
+    id: 4,
     from: "Logistics Bot",
-    email: "alerts@ubik.ai",
+    channel: "system" as InboxChannel,
     subject: "Container YB-7221 — Delay Alert",
     summary: "6hr delay at Mumbai port due to customs hold. ETA revised to March 28 14:00 UTC.",
     priority: "high" as const,
-    time: "7:30 AM",
+    time: "07:30 AM",
     unread: true,
+    category: "UNREAD" as const,
     labels: ["SHIPMENT", "DELAY"],
     agentSuggestion: "Notified downstream partners. Updated delivery schedule.",
   },
   {
-    id: 4,
-    from: "Finance Team",
-    email: "finance@company.com",
-    subject: "Q2 Budget Variance Report Ready",
-    summary: "March variance shows 4.2% overspend on logistics. Cold chain costs up 12% vs forecast.",
-    priority: "normal" as const,
-    time: "Yesterday",
-    unread: false,
-    labels: ["FINANCE", "REPORT"],
-    agentSuggestion: null,
-  },
-  {
     id: 5,
-    from: "Yokohama Auction",
-    email: "notifications@yha.jp",
-    subject: "Auction Results — Lot #4421 Bluefin",
-    summary: "Your bid on Grade A Bluefin lot was outbid. Final price: $48.20/kg. Next auction: April 2.",
-    priority: "normal" as const,
-    time: "Yesterday",
-    unread: false,
-    labels: ["PROCUREMENT", "AUCTION"],
-    agentSuggestion: "Set auto-bid for next lot at $45/kg ceiling",
+    from: "Sarah Kim",
+    channel: "whatsapp" as InboxChannel,
+    subject: "Rate Confirmation — Q2 Mumbai-Rotterdam",
+    summary: "Confirmed revised rate of $2,850/TEU. Updated contract attached. Requires your signature by Friday.",
+    priority: "critical" as const,
+    time: "09:14 AM",
+    unread: true,
+    category: "UNREAD" as const,
+    labels: ["RATE_CONFIRMATION"],
+    agentSuggestion: "Auto-drafted acceptance reply with digital signature request",
   },
   {
     id: 6,
-    from: "Port Authority Rotterdam",
-    email: "inspections@portofrotterdam.nl",
-    subject: "Inspection Slot Confirmation — March 29",
-    summary: "Cold storage inspection confirmed for Bay 12, 09:00 CET. Inspector: J. van der Berg.",
-    priority: "normal" as const,
-    time: "2 days ago",
+    from: "System Alert",
+    channel: "system" as InboxChannel,
+    subject: "Server maintenance",
+    summary: "Scheduled server maintenance completed successfully. All systems operational.",
+    priority: "low" as const,
+    time: "04:00 AM",
     unread: false,
-    labels: ["COMPLIANCE", "INSPECTION"],
+    category: "INFORMATIONAL" as const,
+    labels: ["SYSTEM_LOG"],
     agentSuggestion: null,
+  },
+  {
+    id: 7,
+    from: "Alice Johnson",
+    channel: "slack" as InboxChannel,
+    subject: "Weekly Sync Notes",
+    summary: "Shared comprehensive notes from this week's sync including action items and follow-ups.",
+    priority: "low" as const,
+    time: "WEDNESDAY",
+    unread: false,
+    category: "INFORMATIONAL" as const,
+    labels: ["SYNC_MGMT"],
+    agentSuggestion: null,
+  },
+  {
+    id: 8,
+    from: "Raj Mehta",
+    channel: "call" as InboxChannel,
+    subject: "Missed call — Compliance Docs",
+    summary: "Called regarding HACCP certification renewal extension. Left voicemail requesting callback.",
+    priority: "medium" as const,
+    time: "YESTERDAY",
+    unread: false,
+    category: "UNREAD" as const,
+    labels: ["COMPLIANCE", "SUPPLIER"],
+    agentSuggestion: "Transcribed voicemail. Drafted follow-up email.",
   },
 ];
 
 export const inboxStats = {
-  critical: 1,
-  actionRequired: 3,
-  unread: 3,
-  agentProcessed: 4,
+  inboundQueue: 7,
+  critical: 2,
+  actionRequired: 5,
+  updates: 12,
+  timeSaved: "1hr 30mins",
 };
+
+// ─── INFORMATIONAL SIGNALS ───
+export const informationalSignals = [
+  {
+    id: 1,
+    tag: "GLOBAL_VIVID_PROP",
+    from: "Bob Williams",
+    subject: "Design System V2 Proposals",
+    summary: "A full architectural audit of the UBIK interface patterns for next-gen deployment.",
+    impact: "HIGH" as const,
+    timestamp: "2024.11.02_14:30",
+    source: "CREATIVE_LEAD",
+  },
+  {
+    id: 2,
+    tag: "GLOBAL_SERENE_PROP",
+    from: "Alice Johnson",
+    subject: "User Experience Enhancements",
+    summary: "Comprehensive evaluation of user feedback to refine interaction flows and improve accessibility.",
+    impact: "MEDIUM" as const,
+    timestamp: "2024.11.03_09:15",
+    source: "UX_RESEARCH",
+  },
+];
 
 // ─── PROJECTS (EXPANDED) ───
 export const projectsDetailed = [
@@ -362,6 +438,29 @@ export const projectsDetailed = [
       containers: 24,
       daysRemaining: 18,
     },
+    contextTabs: [
+      { id: "overview", label: "OVERVIEW" },
+      { id: "emails", label: "EMAILS" },
+      { id: "meetings", label: "MEETINGS" },
+      { id: "logistics", label: "LOGISTICS" },
+      { id: "documents", label: "DOCUMENTS" },
+    ],
+    contextData: {
+      emails: [
+        { id: 1, from: "Sarah Kim", subject: "RE: Rate Confirmation", time: "2 hrs ago", status: "reply_needed" },
+        { id: 2, from: "Maersk Ops", subject: "Container Loading Schedule", time: "5 hrs ago", status: "read" },
+        { id: 3, from: "Customs Dept", subject: "Documentation Clearance", time: "1 day ago", status: "resolved" },
+      ],
+      meetings: [
+        { id: 1, title: "Logistics Sync — Maersk", time: "Today 2:00 PM", attendees: 3, status: "upcoming" },
+        { id: 2, title: "Rate Review", time: "Yesterday", attendees: 4, status: "completed", actionItems: 3 },
+      ],
+      logistics: [
+        { id: 1, container: "YB-7221", status: "DELAYED", location: "Mumbai Port", eta: "Mar 28 14:00" },
+        { id: 2, container: "YB-7222", status: "ON_TRACK", location: "In Transit", eta: "Mar 30 08:00" },
+        { id: 3, container: "YB-7223", status: "ON_TRACK", location: "Loading", eta: "Apr 02 12:00" },
+      ],
+    },
   },
   {
     id: 2,
@@ -384,6 +483,22 @@ export const projectsDetailed = [
       suppliers: 6,
       daysRemaining: 5,
     },
+    contextTabs: [
+      { id: "overview", label: "OVERVIEW" },
+      { id: "emails", label: "EMAILS" },
+      { id: "compliance", label: "COMPLIANCE" },
+      { id: "documents", label: "DOCUMENTS" },
+    ],
+    contextData: {
+      emails: [
+        { id: 1, from: "Raj Mehta", subject: "Extension Request — HACCP", time: "5 hrs ago", status: "reply_needed" },
+        { id: 2, from: "Compliance Bot", subject: "Score Alert: Thai Union", time: "8 hrs ago", status: "flagged" },
+      ],
+      meetings: [
+        { id: 1, title: "Supplier Review — Thai Union", time: "Today 10:30 AM", attendees: 4, status: "upcoming" },
+      ],
+      logistics: [],
+    },
   },
   {
     id: 3,
@@ -405,6 +520,20 @@ export const projectsDetailed = [
       budget: { spent: 89000, total: 95000 },
       containers: 12,
       daysRemaining: 3,
+    },
+    contextTabs: [
+      { id: "overview", label: "OVERVIEW" },
+      { id: "logistics", label: "LOGISTICS" },
+      { id: "finance", label: "FINANCE" },
+    ],
+    contextData: {
+      emails: [
+        { id: 1, from: "Finance Agent", subject: "Budget Variance — March", time: "1 day ago", status: "read" },
+      ],
+      meetings: [],
+      logistics: [
+        { id: 1, container: "AF-301", status: "ON_TRACK", location: "Rotterdam", eta: "Mar 29 06:00" },
+      ],
     },
   },
 ];
@@ -433,19 +562,62 @@ export const portActivity = [
   { port: "Singapore", active: 6, delayed: 0 },
 ];
 
-// ─── COMMAND PALETTE ───
-export const commandItems = [
-  { id: "ask", label: "Ask anything...", category: "ACTIONS", shortcut: "↵", icon: "Search" },
-  { id: "research", label: "Deep Research", category: "SKILLS", shortcut: "⇧R", icon: "Brain" },
-  { id: "email", label: "Analyze Emails", category: "SKILLS", shortcut: "⇧E", icon: "Mail" },
-  { id: "budget", label: "Generate Report", category: "SKILLS", shortcut: "⇧B", icon: "BarChart3" },
-  { id: "project-mr", label: "Mumbai-Rotterdam Q2", category: "PROJECTS", shortcut: "", icon: "FolderKanban" },
-  { id: "project-sca", label: "Supplier Compliance Audit", category: "PROJECTS", shortcut: "", icon: "FolderKanban" },
-  { id: "agent-email", label: "Email Triage Agent", category: "AGENTS", shortcut: "", icon: "Bot" },
-  { id: "agent-rate", label: "Rate Confirmation Agent", category: "AGENTS", shortcut: "", icon: "Bot" },
-  { id: "chat-1", label: "Rate confirmation — Maersk Q2", category: "RECENT_CHATS", shortcut: "", icon: "MessageSquare" },
-  { id: "chat-2", label: "Supplier compliance check", category: "RECENT_CHATS", shortcut: "", icon: "MessageSquare" },
-  { id: "scrape", label: "Scrape page → Add to library", category: "CONTEXT_ACTIONS", shortcut: "", icon: "Globe" },
-  { id: "meeting-prep", label: "Prepare for next meeting", category: "CONTEXT_ACTIONS", shortcut: "", icon: "Calendar" },
-  { id: "task-create", label: "Create task from selection", category: "CONTEXT_ACTIONS", shortcut: "⇧T", icon: "CheckSquare" },
+// ─── COMMAND PALETTE (ORGANIZED SECTIONS) ───
+export const commandSections = [
+  {
+    id: "quick",
+    label: "QUICK_ACTIONS",
+    layout: "horizontal" as const,
+    items: [
+      { id: "ask", label: "Ask anything...", shortcut: "↵", icon: "Search" },
+      { id: "research", label: "Deep Research", shortcut: "⇧R", icon: "Brain" },
+      { id: "email", label: "Analyze Emails", shortcut: "⇧E", icon: "Mail" },
+      { id: "budget", label: "Generate Report", shortcut: "⇧B", icon: "BarChart3" },
+    ],
+  },
+  {
+    id: "agents",
+    label: "CUSTOM_AGENTS",
+    layout: "horizontal" as const,
+    items: [
+      { id: "scrape-exim", label: "Scrape EXIM Data", shortcut: "", icon: "Globe" },
+      { id: "revenue-est", label: "Update Revenue Estimates", shortcut: "", icon: "BarChart3" },
+      { id: "competitor", label: "Competitor Analysis", shortcut: "", icon: "Brain" },
+      { id: "market-scan", label: "Market Rate Scan", shortcut: "", icon: "Search" },
+    ],
+  },
+  {
+    id: "projects",
+    label: "PROJECTS",
+    layout: "vertical" as const,
+    items: [
+      { id: "project-mr", label: "Mumbai-Rotterdam Q2", shortcut: "", icon: "FolderKanban" },
+      { id: "project-sca", label: "Supplier Compliance Audit", shortcut: "", icon: "FolderKanban" },
+      { id: "project-af", label: "Atlantic Fresh Q3", shortcut: "", icon: "FolderKanban" },
+    ],
+  },
+  {
+    id: "recent",
+    label: "RECENT_CHATS",
+    layout: "vertical" as const,
+    items: [
+      { id: "chat-1", label: "Rate confirmation — Maersk Q2", shortcut: "", icon: "MessageSquare" },
+      { id: "chat-2", label: "Supplier compliance check", shortcut: "", icon: "MessageSquare" },
+    ],
+  },
+  {
+    id: "context",
+    label: "CONTEXT_ACTIONS",
+    layout: "vertical" as const,
+    items: [
+      { id: "scrape", label: "Scrape page → Add to library", shortcut: "", icon: "Globe" },
+      { id: "meeting-prep", label: "Prepare for next meeting", shortcut: "", icon: "Calendar" },
+      { id: "task-create", label: "Create task from selection", shortcut: "⇧T", icon: "CheckSquare" },
+    ],
+  },
 ];
+
+// Flat list for backward compat
+export const commandItems = commandSections.flatMap((s) =>
+  s.items.map((item) => ({ ...item, category: s.label }))
+);

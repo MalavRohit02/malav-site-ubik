@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react";
-import { commandItems } from "@/lib/mock-data";
+import { commandSections } from "@/lib/mock-data";
 import {
   Search,
   Brain,
@@ -29,7 +29,8 @@ const iconMap: Record<string, React.ReactNode> = {
 export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [selectedSection, setSelectedSection] = useState(0);
+  const [selectedItem, setSelectedItem] = useState(0);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -37,7 +38,8 @@ export function CommandPalette() {
         e.preventDefault();
         setOpen((prev) => !prev);
         setQuery("");
-        setSelectedIndex(0);
+        setSelectedSection(0);
+        setSelectedItem(0);
       }
       if (e.key === "Escape") setOpen(false);
     };
@@ -45,39 +47,71 @@ export function CommandPalette() {
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const filtered = useMemo(() => {
-    if (!query) return commandItems;
-    return commandItems.filter(
-      (item) =>
-        item.label.toLowerCase().includes(query.toLowerCase()) ||
-        item.category.toLowerCase().includes(query.toLowerCase())
-    );
+  const filteredSections = useMemo(() => {
+    if (!query) return commandSections;
+    return commandSections
+      .map((section) => ({
+        ...section,
+        items: section.items.filter(
+          (item) =>
+            item.label.toLowerCase().includes(query.toLowerCase()) ||
+            section.label.toLowerCase().includes(query.toLowerCase())
+        ),
+      }))
+      .filter((s) => s.items.length > 0);
   }, [query]);
 
-  const grouped = useMemo(() => {
-    return filtered.reduce<Record<string, typeof commandItems>>((acc, item) => {
-      if (!acc[item.category]) acc[item.category] = [];
-      acc[item.category].push(item);
-      return acc;
-    }, {});
-  }, [filtered]);
+  // Flat list for keyboard navigation
+  const flatItems = useMemo(() => {
+    return filteredSections.flatMap((s, si) =>
+      s.items.map((item, ii) => ({ ...item, sectionIndex: si, itemIndex: ii, sectionLabel: s.label }))
+    );
+  }, [filteredSections]);
 
-  const flatFiltered = useMemo(() => Object.values(grouped).flat(), [grouped]);
+  const globalIndex = useMemo(() => {
+    let idx = 0;
+    for (let s = 0; s < selectedSection; s++) {
+      idx += (filteredSections[s]?.items.length || 0);
+    }
+    return idx + selectedItem;
+  }, [selectedSection, selectedItem, filteredSections]);
 
   useEffect(() => {
-    setSelectedIndex(0);
+    setSelectedSection(0);
+    setSelectedItem(0);
   }, [query]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
       e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, flatFiltered.length - 1));
+      const newGlobal = Math.min(globalIndex + 1, flatItems.length - 1);
+      const item = flatItems[newGlobal];
+      if (item) {
+        setSelectedSection(item.sectionIndex);
+        setSelectedItem(item.itemIndex);
+      }
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
-      setSelectedIndex((i) => Math.max(i - 1, 0));
+      const newGlobal = Math.max(globalIndex - 1, 0);
+      const item = flatItems[newGlobal];
+      if (item) {
+        setSelectedSection(item.sectionIndex);
+        setSelectedItem(item.itemIndex);
+      }
+    } else if (e.key === "ArrowRight") {
+      e.preventDefault();
+      const section = filteredSections[selectedSection];
+      if (section?.layout === "horizontal") {
+        setSelectedItem((i) => Math.min(i + 1, section.items.length - 1));
+      }
+    } else if (e.key === "ArrowLeft") {
+      e.preventDefault();
+      const section = filteredSections[selectedSection];
+      if (section?.layout === "horizontal") {
+        setSelectedItem((i) => Math.max(i - 1, 0));
+      }
     } else if (e.key === "Enter") {
       e.preventDefault();
-      // Action would go here
       setOpen(false);
     }
   };
@@ -86,12 +120,10 @@ export function CommandPalette() {
 
   return (
     <div className="fixed inset-0 z-[100]" onClick={() => setOpen(false)}>
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-background/80 backdrop-blur-sm" />
 
-      {/* Palette */}
       <div
-        className="relative mx-auto mt-[15vh] w-full max-w-[560px] border border-border bg-background shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.2)]"
+        className="relative mx-auto mt-[12vh] w-full max-w-[600px] border border-border bg-background shadow-[0_24px_80px_-12px_hsl(var(--foreground)/0.2)]"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Search input */}
@@ -110,48 +142,82 @@ export function CommandPalette() {
           </kbd>
         </div>
 
-        {/* Results */}
-        <div className="max-h-[400px] overflow-y-auto">
-          {Object.entries(grouped).map(([category, items]) => (
-            <div key={category}>
+        {/* Sections */}
+        <div className="max-h-[420px] overflow-y-auto">
+          {filteredSections.map((section, sIdx) => (
+            <div key={section.id} className="border-b border-border last:border-b-0">
               <div className="px-4 py-2 font-mono text-[9px] tracking-widest text-muted-foreground">
-                {category}
+                {section.label}
               </div>
-              {items.map((item) => {
-                const globalIdx = flatFiltered.indexOf(item);
-                return (
-                  <button
-                    key={item.id}
-                    onClick={() => setOpen(false)}
-                    className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors ${
-                      globalIdx === selectedIndex
-                        ? "bg-primary text-primary-foreground"
-                        : "hover:bg-accent/10"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <span className={globalIdx === selectedIndex ? "text-primary-foreground" : "text-muted-foreground"}>
-                        {iconMap[item.icon] || <Search className="h-3.5 w-3.5" />}
-                      </span>
-                      <span className="text-xs font-mono">{item.label}</span>
-                    </div>
-                    {item.shortcut && (
-                      <kbd
-                        className={`font-mono text-[10px] px-1.5 py-0.5 ${
-                          globalIdx === selectedIndex
-                            ? "text-primary-foreground/70"
-                            : "text-muted-foreground border border-border"
+
+              {section.layout === "horizontal" ? (
+                /* Horizontal scrollable cards */
+                <div className="px-4 pb-3 flex gap-2 overflow-x-auto">
+                  {section.items.map((item, iIdx) => {
+                    const isSelected = selectedSection === sIdx && selectedItem === iIdx;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setOpen(false)}
+                        className={`shrink-0 flex flex-col items-start gap-1.5 px-3 py-2.5 border min-w-[120px] transition-colors ${
+                          isSelected
+                            ? "bg-foreground text-background border-foreground"
+                            : "border-border hover:border-foreground/30"
                         }`}
                       >
-                        {item.shortcut}
-                      </kbd>
-                    )}
-                  </button>
-                );
-              })}
+                        <span className={isSelected ? "text-background" : "text-muted-foreground"}>
+                          {iconMap[item.icon] || <Search className="h-3.5 w-3.5" />}
+                        </span>
+                        <span className="text-[11px] font-mono font-medium">{item.label}</span>
+                        {item.shortcut && (
+                          <kbd className={`font-mono text-[9px] ${isSelected ? "text-background/60" : "text-muted-foreground"}`}>
+                            {item.shortcut}
+                          </kbd>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              ) : (
+                /* Vertical list */
+                <div>
+                  {section.items.map((item, iIdx) => {
+                    const isSelected = selectedSection === sIdx && selectedItem === iIdx;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setOpen(false)}
+                        className={`w-full flex items-center justify-between px-4 py-2.5 text-left transition-colors ${
+                          isSelected
+                            ? "bg-foreground text-background"
+                            : "hover:bg-accent/10"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className={isSelected ? "text-background" : "text-muted-foreground"}>
+                            {iconMap[item.icon] || <Search className="h-3.5 w-3.5" />}
+                          </span>
+                          <span className="text-xs font-mono">{item.label}</span>
+                        </div>
+                        {item.shortcut && (
+                          <kbd
+                            className={`font-mono text-[10px] px-1.5 py-0.5 ${
+                              isSelected
+                                ? "text-background/60"
+                                : "text-muted-foreground border border-border"
+                            }`}
+                          >
+                            {item.shortcut}
+                          </kbd>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           ))}
-          {filtered.length === 0 && (
+          {filteredSections.length === 0 && (
             <div className="px-4 py-8 text-center">
               <p className="font-mono text-xs text-muted-foreground">NO_RESULTS</p>
             </div>
@@ -162,6 +228,7 @@ export function CommandPalette() {
         <div className="border-t border-border px-4 py-2 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="font-mono text-[9px] text-muted-foreground">↑↓ NAVIGATE</span>
+            <span className="font-mono text-[9px] text-muted-foreground">←→ SCROLL</span>
             <span className="font-mono text-[9px] text-muted-foreground">↵ SELECT</span>
           </div>
           <span className="font-mono text-[9px] text-muted-foreground">⌘K TO TOGGLE</span>
