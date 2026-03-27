@@ -29,11 +29,16 @@ const typeLabels: Record<string, string> = {
   artifact: "ARTIFACTS",
 };
 
-export function FloatingChat() {
+interface FloatingChatProps {
+  onFocusChange?: (focused: boolean) => void;
+}
+
+export function FloatingChat({ onFocusChange }: FloatingChatProps) {
   const [message, setMessage] = useState("");
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [isFocused, setIsFocused] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const filtered = mentionFilter
@@ -42,7 +47,6 @@ export function FloatingChat() {
       )
     : mentionItems;
 
-  // Group by type
   const grouped = filtered.reduce<Record<string, MentionSuggestion[]>>((acc, item) => {
     if (!acc[item.type]) acc[item.type] = [];
     acc[item.type].push(item);
@@ -54,6 +58,23 @@ export function FloatingChat() {
   useEffect(() => {
     setSelectedIndex(0);
   }, [mentionFilter]);
+
+  const handleFocus = () => {
+    setIsFocused(true);
+    onFocusChange?.(true);
+  };
+
+  const handleBlur = (e: React.FocusEvent) => {
+    // Don't blur if clicking within the chat container
+    const container = e.currentTarget.closest('[data-chat-container]');
+    if (container?.contains(e.relatedTarget as Node)) return;
+    
+    // Delay to allow click events to fire
+    setTimeout(() => {
+      setIsFocused(false);
+      onFocusChange?.(false);
+    }, 150);
+  };
 
   const insertMention = (item: MentionSuggestion) => {
     const atIndex = message.lastIndexOf("@");
@@ -103,6 +124,12 @@ export function FloatingChat() {
         return;
       }
     }
+    if (e.key === "Escape" && isFocused) {
+      setIsFocused(false);
+      onFocusChange?.(false);
+      textareaRef.current?.blur();
+      return;
+    }
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       setMessage("");
@@ -110,7 +137,12 @@ export function FloatingChat() {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-[640px] px-4">
+    <div
+      data-chat-container
+      className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-[640px] px-4 transition-transform duration-200 ${
+        isFocused ? "-translate-y-2" : ""
+      }`}
+    >
       {/* @ Mention dropdown */}
       {showMentions && flatFiltered.length > 0 && (
         <div className="mb-1 border border-border bg-background max-h-[280px] overflow-y-auto shadow-[0_-8px_30px_-12px_hsl(var(--foreground)/0.12)]">
@@ -142,7 +174,11 @@ export function FloatingChat() {
       )}
 
       {/* Chat input */}
-      <div className="border border-border bg-background shadow-[0_-4px_24px_-8px_hsl(var(--foreground)/0.08)] backdrop-blur-sm">
+      <div className={`border bg-background transition-all duration-200 ${
+        isFocused 
+          ? "border-foreground shadow-[0_-4px_24px_-8px_hsl(var(--foreground)/0.15)]" 
+          : "border-border shadow-[0_-4px_24px_-8px_hsl(var(--foreground)/0.08)]"
+      }`}>
         <div className="flex items-end gap-2 p-3">
           <button className="h-8 w-8 flex items-center justify-center border border-border hover:bg-accent/10 transition-colors shrink-0 mb-0.5">
             <Paperclip className="h-3.5 w-3.5" />
@@ -153,6 +189,8 @@ export function FloatingChat() {
             value={message}
             onChange={handleChange}
             onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
+            onBlur={handleBlur}
             placeholder="Ask anything... use @ to mention tabs, skills, agents"
             rows={1}
             className="flex-1 bg-transparent text-sm resize-none outline-none placeholder:text-muted-foreground font-mono min-h-[32px] max-h-[120px] py-1.5"
