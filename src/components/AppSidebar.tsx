@@ -124,15 +124,15 @@ export function AppSidebar() {
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
       <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
-        <div className={`${collapsed ? "px-4 py-5" : "px-6 py-6"}`}>
-          <div className={`flex ${collapsed ? "flex-col items-center gap-4" : "items-start justify-between gap-4"}`}>
+        <div className={`${collapsed ? "px-4 py-5" : "px-6 py-5"}`}>
+          <div className={`flex ${collapsed ? "flex-col items-center gap-4" : "items-center justify-between gap-4"}`}>
             <button
               className={collapsed ? "text-center" : "min-w-0 text-left"}
               onClick={collapsed ? () => toggleSidebar() : undefined}
               type="button"
             >
               {!collapsed ? (
-                <h2 className="whitespace-nowrap font-mono text-[1.55rem] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground">
+                <h2 className="whitespace-nowrap leading-none font-mono text-[1.55rem] font-semibold uppercase tracking-[0.12em] text-sidebar-foreground">
                   [ UBIK ]
                 </h2>
               ) : (
@@ -140,7 +140,7 @@ export function AppSidebar() {
               )}
             </button>
             {!collapsed ? (
-              <SidebarTrigger className="border border-sidebar-border text-sidebar-foreground hover:bg-sidebar-accent md:inline-flex" />
+              <SidebarTrigger className="h-10 w-10 border border-sidebar-border bg-transparent text-sidebar-foreground hover:bg-sidebar-accent md:inline-flex [&_svg]:h-4 [&_svg]:w-4" />
             ) : null}
           </div>
         </div>
