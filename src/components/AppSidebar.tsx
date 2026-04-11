@@ -126,9 +126,9 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" className="border-r border-border">
-      <SidebarHeader className="gap-0 border-b border-sidebar-border p-0">
-        <div className={`${collapsed ? "px-4 py-5" : "px-6 py-5"}`}>
-          <div className={`flex ${collapsed ? "flex-col items-center gap-4" : "items-center justify-between gap-4"}`}>
+      <SidebarHeader className="h-12 gap-0 border-b border-sidebar-border p-0">
+        <div className={`${collapsed ? "px-4" : "px-6"} flex h-12 items-center`}>
+          <div className={`flex w-full ${collapsed ? "items-center justify-center" : "items-center justify-between"} gap-4`}>
             <button
               className={collapsed ? "text-center" : "min-w-0 text-left"}
               onClick={collapsed ? () => toggleSidebar() : undefined}
@@ -147,23 +147,24 @@ export function AppSidebar() {
             ) : null}
           </div>
         </div>
+      </SidebarHeader>
+
+      <SidebarContent className="gap-0 bg-sidebar">
         {collapsed ? (
-          <div className="flex justify-center pb-5">
+          <div className="flex justify-center px-4 py-4">
             <button className="flex h-8 w-8 items-center justify-center border border-sidebar-border bg-sidebar-primary text-sidebar-primary-foreground">
               <Stars className="h-3.5 w-3.5" />
             </button>
           </div>
         ) : (
-          <div className="px-6 pb-5">
+          <div className="px-6 py-4">
             <button className="flex w-full items-center justify-center gap-2 border border-sidebar-border bg-sidebar-primary px-3 py-3 font-mono text-[11px] uppercase tracking-[0.16em] text-sidebar-primary-foreground">
               <Sparkles className="h-3.5 w-3.5" />
               Create
             </button>
           </div>
         )}
-      </SidebarHeader>
 
-      <SidebarContent className="gap-0 bg-sidebar">
         {(["navigate", "playbooks"] as const).map((sectionKey) => (
           <div key={sectionKey}>
             <SectionToggle
