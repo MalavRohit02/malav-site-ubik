@@ -211,6 +211,22 @@ describe("Ubik shell", () => {
     expect(screen.getByText("Approvals fetch")).toBeInTheDocument();
   });
 
+  it("renders the meetings workspace with customer spaces and recording controls", async () => {
+    window.history.pushState({}, "", "/meetings?tab=meetings-main");
+    render(createElement(App));
+
+    expect(await screen.findByText("Customer spaces")).toBeInTheDocument();
+    expect(screen.getByText("Coming up today")).toBeInTheDocument();
+    expect(screen.getByText("History")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Start recording Supplier review - Thai Union/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Start recording Supplier review - Thai Union/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: /Stop recording for Supplier review - Thai Union/i })).toBeInTheDocument();
+    });
+  });
+
   it("renders the inbox decision queue and workspace by default", async () => {
     window.history.pushState({}, "", "/inbox?tab=inbox-main");
     render(createElement(App));
