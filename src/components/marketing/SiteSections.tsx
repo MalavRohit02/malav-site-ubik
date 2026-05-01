@@ -970,14 +970,16 @@ export function SitePricingGrid() {
               tier.featured ? "bg-primary text-white" : "bg-background"
             }`}
           >
-            {tier.featured && (
-              <Badge className="mb-4 w-fit rounded-none bg-white text-xs font-bold uppercase tracking-widest text-primary">
-                Most popular
-              </Badge>
-            )}
-            <p className={`font-mono text-xs font-bold uppercase tracking-widest ${tier.featured ? "text-white/70" : "text-muted-foreground"}`}>
-              {tier.name}
-            </p>
+            <div className="mb-4 flex items-center justify-between gap-[4px]">
+              <p className={`font-mono text-xs font-bold uppercase tracking-widest ${tier.featured ? "text-white/70" : "text-muted-foreground"}`}>
+                {tier.name}
+              </p>
+              {tier.featured && (
+                <Badge className="shrink-0 rounded-none bg-white text-xs font-bold uppercase tracking-widest text-primary">
+                  Most popular
+                </Badge>
+              )}
+            </div>
             <p className={`mt-3 font-mono text-5xl font-bold ${tier.featured ? "text-white" : "text-foreground"}`}>
               {tier.price}
             </p>
